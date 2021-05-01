@@ -1,3 +1,5 @@
+use core::cmp::{max, min};
+
 pub use smart_leds_trait::*;
 
 #[derive(Copy, Clone, Default)]
@@ -5,6 +7,43 @@ pub struct Hsv {
     pub hue: u8,
     pub sat: u8,
     pub val: u8,
+}
+
+impl From<RGB8> for Hsv {
+    fn from(rgb: RGB8) -> Self {
+        let r: i16 = rgb.r.into();
+        let g: i16 = rgb.g.into();
+        let b: i16 = rgb.b.into();
+
+        let min = min(r, min(g, b));
+        let max = max(r, max(g, b));
+
+        let hue = if max == min {
+            0
+        } else if max == r {
+            (42 * (g - b) / (max - min) + 255) % 255
+        } else if max == g {
+            42 * (b - r) / (max - min) + 85
+        } else {
+            // max == b
+            42 * (r - g) / (max - min) + 170
+        };
+
+        let sat = if max == 0 { 0 } else { 255 - (255 * min) / max };
+        let val = max;
+
+        Self {
+            hue: hue as u8,
+            sat: sat as u8,
+            val: val as u8,
+        }
+    }
+}
+
+impl From<Hsv> for RGB8 {
+    fn from(hsv: Hsv) -> Self {
+        hsv2rgb(hsv)
+    }
 }
 
 /// Converts a hsv value into RGB values. Because the hsv values are integers, the precision of the
